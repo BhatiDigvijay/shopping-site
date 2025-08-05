@@ -1,0 +1,66 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app)
+
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("kaibbrultvtxxeks")
+TO_EMAIL = "digvijaybhati33@gmail.com"  # Your email to receive order details
+
+@app.route("/checkout", methods=["POST"])
+def checkout():
+    data = request.json
+    name = data.get("name")
+    phone = data.get("phone")
+    email = data.get("email")
+    address = data.get("address")
+    pincode = data.get("pincode")
+    product = data.get("product")
+
+    if not all([name, phone, email, address, pincode, product]):
+        return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+    subject = f"🛒 New Order: {product}"
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = EMAIL_USER
+    message["To"] = TO_EMAIL
+
+    html = f"""
+    <html>
+      <body>
+        <h2>New Order Received</h2>
+        <p><strong>Product:</strong> {product}</p>
+        <p><strong>Name:</strong> {name}</p>
+        <p><strong>Phone:</strong> {phone}</p>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Address:</strong> {address}</p>
+        <p><strong>Pincode:</strong> {pincode}</p>
+      </body>
+    </html>
+    """
+
+    message.attach(MIMEText(html, "html"))
+
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(EMAIL_USER, EMAIL_PASS)
+            server.sendmail(EMAIL_USER, TO_EMAIL, message.as_string())
+
+        return jsonify({"success": True, "message": "Order placed successfully!"})
+    except Exception as e:
+        print("Error sending email:", e)
+        return jsonify({"success": False, "message": "Error placing order."}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
