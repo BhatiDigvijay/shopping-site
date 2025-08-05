@@ -64,3 +64,28 @@ def checkout():
 
 if __name__ == "__main__":
     app.run(debug=True)
+from flask import Flask, render_template, jsonify
+import os
+import requests
+from dotenv import load_dotenv
+
+# Load from .env file
+load_dotenv()
+
+app = Flask(__name__)
+API_KEY = os.getenv("API_KEY")
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/api/data/<city>")
+def get_data(city):
+    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
+    res = requests.get(url)
+    return jsonify(res.json())
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
+
