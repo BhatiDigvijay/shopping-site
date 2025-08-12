@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,9 +13,23 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# Email config
 EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("kaibbrultvtxxeks")
-TO_EMAIL = "digvijaybhati33@gmail.com"  # Your email to receive order details
+EMAIL_PASS = os.getenv("EMAIL_PASS")  # make sure this is correct in .env
+TO_EMAIL = "digvijaybhati33@gmail.com"
+
+# API key config
+API_KEY = os.getenv("API_KEY")
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/api/data/<city>")
+def get_data(city):
+    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
+    res = requests.get(url)
+    return jsonify(res.json())
 
 @app.route("/checkout", methods=["POST"])
 def checkout():
@@ -63,34 +78,5 @@ def checkout():
         return jsonify({"success": False, "message": "Error placing order."}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
-from flask import Flask, render_template, jsonify
-import os
-import requests
-from dotenv import load_dotenv
-
-# Load from .env file
-load_dotenv()
-
-app = Flask(__name__)
-API_KEY = os.getenv("API_KEY")
-
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-@app.route("/api/data/<city>")
-def get_data(city):
-    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
-    res = requests.get(url)
-    return jsonify(res.json())
-
-if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
-import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # use PORT from Render, fallback to 5000
     app.run(host="0.0.0.0", port=port)
-
